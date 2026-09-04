@@ -1,0 +1,52 @@
+---
+name: Build and publish add-on images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "meshcentral/**"
+      - ".github/workflows/builder.yaml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        arch:
+          - aarch64
+          - amd64
+          - armv7
+          - i386
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get add-on metadata
+        id: meta
+        run: |
+          version=$(grep -E '^version:' meshcentral/config.yaml | awk '{print $2}' | tr -d '"')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: home-assistant/builder@master
+        with:
+          args: |
+            --${{ matrix.arch }} \
+            --target meshcentral \
+            --image "meshcentral-{arch}" \
+            --docker-hub ghcr.io/${{ github.repository_owner }} \
+            --addon

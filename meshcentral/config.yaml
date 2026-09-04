@@ -1,0 +1,69 @@
+# yamllint disable rule:line-length
+name: MeshCentral
+version: "1.1.21"
+slug: meshcentral
+description: Open-source web-based remote computer management server.
+url: https://github.com/Ylianst/MeshCentralHA/tree/main/meshcentral
+image: "ghcr.io/ylianst/meshcentral-{arch}"
+webui: "https://[HOST]:[PORT:443]/"
+arch:
+  - aarch64
+  - amd64
+  - armv7
+  - i386
+init: false
+startup: application
+boot: auto
+hassio_api: false
+homeassistant_api: false
+host_network: false
+ports:
+  "443/tcp": 8443
+  "80/tcp": 8080
+ports_description:
+  "443/tcp": HTTPS web UI and agent connections
+  "80/tcp": HTTP redirect and Let's Encrypt (ACME) validation
+map:
+  - ssl:ro
+options:
+  server_title: MeshCentral
+  hostname: ""
+  external_https_port: 8443
+  external_http_port: 8080
+  allow_new_accounts: true
+  tls_offload: false
+  use_ha_certificate: false
+  cert_file: fullchain.pem
+  key_file: privkey.pem
+  watch_certificate: true
+  allow_framing: false
+  allowed_framing_origins: ""
+  wan_only: false
+  lan_only: false
+  lets_encrypt_email: ""
+  lets_encrypt_names: ""
+  lets_encrypt_production: false
+  mongodb_url: ""
+  session_key: ""
+  log_to_file: false
+schema:
+  server_title: str?
+  hostname: str?
+  external_https_port: int(1,65535)
+  external_http_port: int(1,65535)
+  allow_new_accounts: bool
+  tls_offload: bool
+  use_ha_certificate: bool
+  cert_file: str
+  key_file: str
+  watch_certificate: bool
+  allow_framing: bool
+  allowed_framing_origins: str?
+  wan_only: bool
+  lan_only: bool
+  lets_encrypt_email: email?
+  lets_encrypt_names: str?
+  lets_encrypt_production: bool
+  mongodb_url: str?
+  session_key: password?
+  log_to_file: bool
