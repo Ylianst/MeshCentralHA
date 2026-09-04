@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.21-4
+
+- Removed the `external_https_port` / `external_http_port` options. The external
+  port is now read automatically from the add-on's **Network** port mapping, so
+  ports are configured in one place only.
+
+## 1.1.21-3
+
+- Removed the `watch_certificate` option; certificate renewals are always
+  watched.
+- Removed the `wan_only` and `lan_only` options (always off).
+- Removed the `mongodb_url` and `session_key` options. MeshCentral uses its
+  built-in NeDB database and an auto-generated, persisted session key.
+
 ## 1.1.21-2
 
 - Build the add-on locally from the Dockerfile (removed the prebuilt `image:`

@@ -80,17 +80,13 @@ function buildConfig(options) {
     // The container's 443/80 are mapped to different host ports (default
     // 8443/8080) so they don't clash with Home Assistant on 80/443. aliasPort
     // tells MeshCentral which external port agents/browsers actually use, so
-    // generated agent installers and links point at the right port.
-    const httpsPort = parseInt(options.external_https_port, 10) || 8443;
+    // generated agent installers and links point at the right port. The host
+    // port is provided by run.sh from the add-on's Network mapping.
+    const httpsPort = parseInt(process.env.MESH_HTTPS_PORT, 10) || 8443;
     if (httpsPort !== 443) { settings.aliasPort = httpsPort; }
 
     const host = certHostname();
     if (host) { settings.cert = host; }
-    if (options.wan_only) { settings.WANonly = true; }
-    if (options.lan_only) { settings.LANonly = true; }
-    if (options.mongodb_url && options.mongodb_url.trim() !== '') {
-        settings.mongoDb = options.mongodb_url.trim();
-    }
 
     const domain = {
         title: options.server_title || 'MeshCentral',

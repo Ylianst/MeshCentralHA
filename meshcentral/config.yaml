@@ -1,6 +1,6 @@
 # yamllint disable rule:line-length
 name: MeshCentral
-version: "1.1.21-2"
+version: "1.1.21-4"
 slug: meshcentral
 description: Open-source web-based remote computer management server.
 url: https://github.com/Ylianst/MeshCentralHA/tree/main/meshcentral
@@ -13,7 +13,7 @@ arch:
 init: false
 startup: application
 boot: auto
-hassio_api: false
+hassio_api: true
 homeassistant_api: false
 host_network: false
 ports:
@@ -26,23 +26,9 @@ map:
   - ssl:ro
 options:
   server_title: MeshCentral
-  external_https_port: 8443
-  external_http_port: 8080
   allow_new_accounts: true
-  watch_certificate: true
-  wan_only: false
-  lan_only: false
-  mongodb_url: ""
-  session_key: ""
   log_to_file: false
 schema:
   server_title: str?
-  external_https_port: int(1,65535)
-  external_http_port: int(1,65535)
   allow_new_accounts: bool
-  watch_certificate: bool
-  wan_only: bool
-  lan_only: bool
-  mongodb_url: str?
-  session_key: password?
   log_to_file: bool

@@ -16,14 +16,7 @@ Once running, install a MeshCentral agent on any computer and manage it remotely
 | Option                    | Description                                                                                          |
 | ------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `server_title`            | Title shown on the MeshCentral login page.                                                           |
-| `external_https_port`     | The **host** HTTPS port clients/agents connect to (default `8443`). Must match the host port mapped to container `443/tcp` in the **Network** tab. |
-| `external_http_port`      | The **host** HTTP port used for redirects (default `8080`). Must match the host port mapped to container `80/tcp`. |
 | `allow_new_accounts`      | Allow visitors to self-register new accounts. Turn off after creating your admin account.            |
-| `watch_certificate`       | Watch the Home Assistant certificate and automatically reload MeshCentral when it is renewed.         |
-| `wan_only`                | Run in WAN-only mode (server reached over the internet, no local network discovery).                 |
-| `lan_only`                | Run in LAN-only mode (local network only, no fixed hostname required).                               |
-| `mongodb_url`             | Optional MongoDB connection string. Leave empty to use the built-in NeDB database.                   |
-| `session_key`             | Fixed session encryption key. Leave empty to auto-generate and persist one.                          |
 | `log_to_file`             | Write MeshCentral logs to the data folder in addition to the add-on log.                             |
 
 ### Advanced: full custom configuration
@@ -50,16 +43,10 @@ MeshCentral always binds `443` and `80` **inside** the container. Because Home
 Assistant itself commonly uses `80`/`443`, the add-on maps them to different
 **host** ports by default (`8443` and `8080`) so there is no conflict.
 
-Two things must agree:
-
-1. The **host** ports mapped to `443/tcp` and `80/tcp` in the add-on **Network**
-   tab.
-2. The `external_https_port` / `external_http_port` options.
-
-They default to `8443` / `8080`. If you change one, change the other to match —
-otherwise agents receive the wrong port in their generated installers and cannot
-connect. Internally MeshCentral still listens on `443`/`80`; `external_https_port`
-is applied as MeshCentral's `aliasPort` so the advertised URLs are correct.
+Set the **host** ports in the add-on **Network** tab. There is nothing to
+configure elsewhere: MeshCentral still listens on `443`/`80` internally, and the
+host port mapped to `443/tcp` is advertised to agents automatically (via
+MeshCentral's `aliasPort`) so generated installers and links use the right port.
 
 ## Home Assistant certificate
 
@@ -80,10 +67,8 @@ How it works:
 
 Notes:
 
-- Certificate **renewals are detected automatically**. When `watch_certificate`
-  is on (the default), the add-on watches the files in `/ssl` and restarts
-  MeshCentral so it reloads the new certificate. Set `watch_certificate: false`
-  to require a manual restart instead.
+- Certificate **renewals are detected automatically**. The add-on watches the
+  files in `/ssl` and restarts MeshCentral so it reloads the new certificate.
 - This shares the *certificate*, not the port. MeshCentral still runs on its own
   port; agents connect there directly. It does not place MeshCentral under a
   Home Assistant sub-path.

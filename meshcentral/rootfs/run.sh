@@ -4,8 +4,8 @@
 #
 # 1. Installs Home Assistant's TLS certificate.
 # 2. Generates MeshCentral's config.json from the add-on options.
-# 3. Launches MeshCentral and, when enabled, watches the Home Assistant
-#    certificate and restarts MeshCentral when it is renewed.
+# 3. Launches MeshCentral and watches the Home Assistant certificate,
+#    restarting MeshCentral when it is renewed.
 # ==============================================================================
 set -e
 
@@ -38,6 +38,14 @@ cert_signature() {
 }
 
 install_ha_cert
+
+# The external HTTPS port agents connect to is taken from the add-on's Network
+# port mapping (container 443/tcp -> host port), so it is configured in one place
+# only. Falls back to the container port when unmapped.
+HTTPS_HOST_PORT="$(bashio::addon.port '443/tcp')"
+if bashio::var.has_value "${HTTPS_HOST_PORT}"; then
+    export MESH_HTTPS_PORT="${HTTPS_HOST_PORT}"
+fi
 
 # If the user dropped their own config.user.json in the data folder we honour it
 # verbatim and skip generation. Otherwise we build config.json from the options.
@@ -77,12 +85,6 @@ on_term() {
 trap on_term SIGTERM SIGINT
 
 start_mesh
-
-# Without certificate watching, just wait for MeshCentral and mirror its exit.
-if ! bashio::config.true 'watch_certificate'; then
-    wait "${MESH_PID}"
-    exit $?
-fi
 
 bashio::log.info "Watching Home Assistant certificate for renewals."
 LAST_SIG="$(cert_signature)"
