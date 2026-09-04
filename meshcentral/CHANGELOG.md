@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.21-5
+
+- Reading the external port from the Network mapping now requires `hassio_api`
+  and never crashes the add-on: if the Supervisor API is unavailable, it falls
+  back to the default advertised port (`8443`) instead of restart-looping.
+
 ## 1.1.21-4
 
 - Removed the `external_https_port` / `external_http_port` options. The external
