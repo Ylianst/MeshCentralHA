@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.21-7
+
+- Surface MeshCentral's own output in the add-on log and add a startup diagnostic
+  that reports whether MeshCentral is listening on container port 443 (and shows
+  recent MeshCentral errors), to help debug connectivity.
+
 ## 1.1.21-6
 
 - Reverted the automatic port detection. Reading the Network mapping needs the

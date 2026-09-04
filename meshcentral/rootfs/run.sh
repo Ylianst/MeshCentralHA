@@ -52,13 +52,31 @@ fi
 # From here on we manage the MeshCentral child process ourselves so we can
 # reload certificates, so disable automatic exit-on-error.
 set +e
-
 MESH_PID=""
 
 start_mesh() {
-    meshcentral --datapath "${DATA_PATH}" &
+    # 2>&1 surfaces MeshCentral's own stderr in the add-on log.
+    meshcentral --datapath "${DATA_PATH}" 2>&1 &
     MESH_PID=$!
     bashio::log.info "MeshCentral started (pid ${MESH_PID})."
+}
+
+# Report whether MeshCentral is actually listening on the container HTTPS port,
+# and surface its error log, so connectivity problems are visible in the log.
+diagnose_listen() {
+    sleep 12
+    node -e '
+        const net = require("net");
+        const s = net.connect(443, "127.0.0.1");
+        s.setTimeout(4000);
+        s.on("connect", () => { console.log("DIAG: MeshCentral IS listening on container port 443."); s.end(); process.exit(0); });
+        s.on("timeout", () => { console.log("DIAG: no response from 127.0.0.1:443 (MeshCentral not listening)."); process.exit(0); });
+        s.on("error", (e) => { console.log("DIAG: cannot reach 127.0.0.1:443 - " + e.message); process.exit(0); });
+    ' 2>&1 || true
+    if [ -f "${DATA_PATH}/mesherrors.txt" ]; then
+        bashio::log.info "Last MeshCentral errors:"
+        tail -n 20 "${DATA_PATH}/mesherrors.txt" || true
+    fi
 }
 
 stop_mesh() {
@@ -77,6 +95,7 @@ on_term() {
 trap on_term SIGTERM SIGINT
 
 start_mesh
+diagnose_listen &
 
 bashio::log.info "Watching Home Assistant certificate for renewals."
 LAST_SIG="$(cert_signature)"
