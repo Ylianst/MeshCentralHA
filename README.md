@@ -2,38 +2,33 @@
 
 [MeshCentral](https://meshcentral.com) is a full open-source web-based remote
 computer management server. This repository packages MeshCentral as a
-[Home Assistant](https://www.home-assistant.io/) app so you can run it
+[Home Assistant](https://www.home-assistant.io/) add-on so you can run it
 directly on your Home Assistant host.
-
-> **Note:** Recent versions of Home Assistant renamed **Add-ons** to **Apps**
-> (an add-on is now called an app). If your Home Assistant still shows
-> **Add-ons**, use that menu instead — the steps are otherwise the same.
 
 ## Installation
 
-1. In Home Assistant, go to **Settings → Apps** and select **Install app**
-   to open the app store.
-2. In the top-right corner, select the **⋮** menu → **Repositories**.
-3. Add this repository URL, then select **Add**:
+1. In Home Assistant, go to **Settings → Add-ons → Add-on Store**.
+2. Click the **⋮** menu (top-right) → **Repositories**.
+3. Add this repository URL:
 
    ```
    https://github.com/Ylianst/MeshCentralHA
    ```
 
-4. Close the dialog. The **MeshCentral** app now appears in the store. Select
-   it and press **Install**.
+4. The **MeshCentral** add-on now appears in the store. Click it and press
+   **Install**.
 5. Open the **Configuration** tab, set your options (see
-   [the app docs](meshcentral/DOCS.md)), then **Start** the app.
+   [the add-on docs](meshcentral/DOCS.md)), then **Start** the add-on.
 
 ## What's in this repository
 
 | Path                       | Purpose                                            |
 | -------------------------- | -------------------------------------------------- |
-| `repository.yaml`          | App (add-on) repository metadata read by the Supervisor. |
-| `meshcentral/`             | The MeshCentral app itself.                         |
-| `meshcentral/config.yaml`  | App manifest and user-configurable options.         |
+| `repository.yaml`          | Add-on repository metadata read by the Supervisor. |
+| `meshcentral/`             | The MeshCentral add-on itself.                      |
+| `meshcentral/config.yaml`  | Add-on manifest and user-configurable options.      |
 | `meshcentral/Dockerfile`   | Container build that installs the `meshcentral` npm package. |
-| `meshcentral/DOCS.md`      | End-user documentation shown in the app UI.         |
+| `meshcentral/DOCS.md`      | End-user documentation shown in the add-on UI.      |
 
 ## Ports
 
@@ -44,7 +39,7 @@ MeshCentral is served directly on the host (no Home Assistant Ingress):
 | `443/tcp`      | `8443`  | HTTPS web UI and agent connections.            |
 | `80/tcp`       | `8080`  | HTTP redirect and Let's Encrypt validation.    |
 
-You can remap the host ports from the app's **Network** tab.
+You can remap the host ports from the add-on **Network** tab.
 
 ## License
 

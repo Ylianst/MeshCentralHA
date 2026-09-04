@@ -4,6 +4,7 @@ version: "1.1.21"
 slug: meshcentral
 description: Open-source web-based remote computer management server.
 url: https://github.com/Ylianst/MeshCentralHA/tree/main/meshcentral
+image: "ghcr.io/ylianst/meshcentral-{arch}"
 webui: "https://[HOST]:[PORT:443]/"
 arch:
   - aarch64
