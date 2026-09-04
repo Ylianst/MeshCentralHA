@@ -39,18 +39,6 @@ cert_signature() {
 
 install_ha_cert
 
-# The external HTTPS port agents connect to is taken from the add-on's Network
-# port mapping (container 443/tcp -> host port), so it is configured in one place
-# only. Reading it needs the Supervisor API; if that is unavailable we fall back
-# to the default advertised port rather than failing to start. The `if` guard
-# keeps a non-zero API result from tripping `set -e`.
-if HTTPS_HOST_PORT="$(bashio::addon.port '443/tcp' 2>/dev/null)" \
-    && bashio::var.has_value "${HTTPS_HOST_PORT}"; then
-    export MESH_HTTPS_PORT="${HTTPS_HOST_PORT}"
-else
-    bashio::log.warning "Could not read the 443/tcp host port from the Supervisor API; agents will use the default advertised port (8443)."
-fi
-
 # If the user dropped their own config.user.json in the data folder we honour it
 # verbatim and skip generation. Otherwise we build config.json from the options.
 if bashio::fs.file_exists "${DATA_PATH}/config.user.json"; then

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.21-6
+
+- Reverted the automatic port detection. Reading the Network mapping needs the
+  Supervisor API, which is refused (`forbidden`) on some installs and caused a
+  restart loop. The advertised HTTPS port is set with the `external_https_port`
+  option again (default `8443`); no Supervisor API access is used.
+
 ## 1.1.21-5
 
 - Reading the external port from the Network mapping now requires `hassio_api`
