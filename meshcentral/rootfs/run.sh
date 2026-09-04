@@ -2,7 +2,7 @@
 # ==============================================================================
 # MeshCentral Home Assistant add-on startup script.
 #
-# 1. Optionally installs Home Assistant's TLS certificate.
+# 1. Installs Home Assistant's TLS certificate.
 # 2. Generates MeshCentral's config.json from the add-on options.
 # 3. Launches MeshCentral and, when enabled, watches the Home Assistant
 #    certificate and restarts MeshCentral when it is renewed.
@@ -12,29 +12,27 @@ set -e
 DATA_PATH="/data/meshcentral"
 mkdir -p "${DATA_PATH}"
 
-USE_HA_CERT=false
-if bashio::config.true 'use_ha_certificate'; then USE_HA_CERT=true; fi
-CERT_SRC="/ssl/$(bashio::config 'cert_file')"
-KEY_SRC="/ssl/$(bashio::config 'key_file')"
+# The Home Assistant certificate is always used, read from fixed /ssl filenames.
+CERT_SRC="/ssl/fullchain.pem"
+KEY_SRC="/ssl/privkey.pem"
 
-# Copy Home Assistant's certificate into the filenames MeshCentral loads. For
-# MeshCentral to actually use it, the 'hostname' option must match the
-# certificate's common name, otherwise MeshCentral regenerates a self-signed one.
+# Copy Home Assistant's certificate into the filenames MeshCentral loads. The
+# MeshCentral 'cert' name is derived from the certificate itself (see
+# generate-config.js), so it always matches and MeshCentral serves this cert.
 install_ha_cert() {
-    if [ "${USE_HA_CERT}" != true ]; then return; fi
     if bashio::fs.file_exists "${CERT_SRC}" && bashio::fs.file_exists "${KEY_SRC}"; then
         cp "${CERT_SRC}" "${DATA_PATH}/webserver-cert-public.crt"
         cp "${KEY_SRC}" "${DATA_PATH}/webserver-cert-private.key"
         bashio::log.info "Installed Home Assistant certificate from ${CERT_SRC}."
     else
-        bashio::log.warning "use_ha_certificate is enabled but ${CERT_SRC} or ${KEY_SRC} was not found in /ssl."
+        bashio::log.warning "${CERT_SRC} or ${KEY_SRC} was not found in /ssl."
         bashio::log.warning "MeshCentral will fall back to its own self-signed certificate."
     fi
 }
 
 # Hash of the certificate files, used to detect renewals.
 cert_signature() {
-    if [ "${USE_HA_CERT}" = true ] && bashio::fs.file_exists "${CERT_SRC}"; then
+    if bashio::fs.file_exists "${CERT_SRC}"; then
         sha256sum "${CERT_SRC}" "${KEY_SRC}" 2>/dev/null | awk '{ print $1 }' | tr -d '\n'
     fi
 }
@@ -81,7 +79,7 @@ trap on_term SIGTERM SIGINT
 start_mesh
 
 # Without certificate watching, just wait for MeshCentral and mirror its exit.
-if [ "${USE_HA_CERT}" != true ] || ! bashio::config.true 'watch_certificate'; then
+if ! bashio::config.true 'watch_certificate'; then
     wait "${MESH_PID}"
     exit $?
 fi

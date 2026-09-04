@@ -1,8 +1,7 @@
-ARG BUILD_FROM
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.19
 FROM ${BUILD_FROM}
 
-# Version of the meshcentral npm package to install. Keep in sync with
-# the "version" field in config.yaml.
+# Version of the meshcentral npm package to install.
 ARG MESHCENTRAL_VERSION=1.1.21
 
 ENV LANG=C.UTF-8
@@ -29,5 +28,11 @@ COPY rootfs /
 RUN chmod a+x /run.sh
 
 WORKDIR /data/meshcentral
+
+LABEL \
+    org.opencontainers.image.title="MeshCentral" \
+    org.opencontainers.image.description="Open-source web-based remote computer management server." \
+    org.opencontainers.image.source="https://github.com/Ylianst/MeshCentralHA" \
+    org.opencontainers.image.licenses="Apache-2.0"
 
 CMD [ "/run.sh" ]

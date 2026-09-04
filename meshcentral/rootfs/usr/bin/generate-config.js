@@ -15,6 +15,7 @@ const OPTIONS_PATH = '/data/options.json';
 const DATA_PATH = '/data/meshcentral';
 const CONFIG_PATH = `${DATA_PATH}/config.json`;
 const SESSION_KEY_PATH = `${DATA_PATH}/.session_key`;
+const CERT_PATH = '/ssl/fullchain.pem';
 
 function readOptions() {
     try {
@@ -23,6 +24,26 @@ function readOptions() {
         console.error(`Unable to read ${OPTIONS_PATH}: ${err.message}`);
         return {};
     }
+}
+
+// Derive the certificate's hostname (first DNS SAN, else subject CN) from the
+// Home Assistant certificate so MeshCentral's 'cert' name matches and it serves
+// that certificate instead of regenerating a self-signed one.
+function certHostname() {
+    try {
+        const x509 = new crypto.X509Certificate(fs.readFileSync(CERT_PATH));
+        const san = x509.subjectAltName || '';
+        const dns = san
+            .split(',')
+            .map((entry) => entry.trim())
+            .find((entry) => entry.startsWith('DNS:'));
+        if (dns) { return dns.slice(4).trim(); }
+        const cn = /CN=([^,\n]+)/.exec(x509.subject || '');
+        if (cn) { return cn[1].trim(); }
+    } catch (err) {
+        console.error(`Unable to read certificate hostname from ${CERT_PATH}: ${err.message}`);
+    }
+    return '';
 }
 
 // Return the configured session key, or a persisted/generated random one.
@@ -47,15 +68,6 @@ function resolveSessionKey(options) {
     return generated;
 }
 
-// Split a comma/whitespace separated string into a trimmed, non-empty array.
-function splitList(value) {
-    if (!value) { return []; }
-    return value
-        .split(/[,\s]+/)
-        .map((item) => item.trim())
-        .filter((item) => item !== '');
-}
-
 function buildConfig(options) {
     const settings = {
         // MeshCentral always listens on the standard ports inside the
@@ -72,27 +84,13 @@ function buildConfig(options) {
     const httpsPort = parseInt(options.external_https_port, 10) || 8443;
     if (httpsPort !== 443) { settings.aliasPort = httpsPort; }
 
-    if (options.hostname && options.hostname.trim() !== '') {
-        settings.cert = options.hostname.trim();
-    }
+    const host = certHostname();
+    if (host) { settings.cert = host; }
     if (options.wan_only) { settings.WANonly = true; }
     if (options.lan_only) { settings.LANonly = true; }
-    if (options.tls_offload) { settings.tlsOffload = true; }
     if (options.mongodb_url && options.mongodb_url.trim() !== '') {
         settings.mongoDb = options.mongodb_url.trim();
     }
-
-    // Allow the MeshCentral UI to be embedded in a Home Assistant iframe panel.
-    // Restricting to specific origins is preferred over blanket framing.
-    const framingOrigins = splitList(options.allowed_framing_origins);
-    if (framingOrigins.length > 0) {
-        settings.allowedFramingOrigins = framingOrigins;
-        settings.AllowFraming = true;
-    } else if (options.allow_framing) {
-        settings.AllowFraming = true;
-    }
-    // Cross-site iframe embedding requires SameSite=None cookies (over HTTPS).
-    if (settings.AllowFraming) { settings.cookieSameSite = 'None'; }
 
     const domain = {
         title: options.server_title || 'MeshCentral',
@@ -103,15 +101,6 @@ function buildConfig(options) {
         settings,
         domains: { '': domain },
     };
-
-    const leNames = splitList(options.lets_encrypt_names);
-    if (options.lets_encrypt_email && options.lets_encrypt_email.trim() !== '' && leNames.length > 0) {
-        config.letsencrypt = {
-            email: options.lets_encrypt_email.trim(),
-            names: leNames.join(','),
-            production: options.lets_encrypt_production === true,
-        };
-    }
 
     return config;
 }
