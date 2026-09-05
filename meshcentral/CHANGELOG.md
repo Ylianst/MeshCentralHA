@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.21-10
+
+- MeshCentral's own console output is now streamed live into the add-on log, so
+  startup progress and errors are visible.
+- The startup diagnostic now polls the HTTPS port for up to two minutes (first
+  run generates certificates and can take a while) instead of checking once
+  after 15 seconds, and only dumps diagnostics if the server never comes up.
+
 ## 1.1.21-9
 
 - Data now lives in the persistent **addon_config** folder

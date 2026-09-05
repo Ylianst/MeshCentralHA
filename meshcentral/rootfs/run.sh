@@ -78,25 +78,37 @@ MESH_PID=""
 MESH_LOG="${DATA_PATH}/meshcentral.log"
 
 start_mesh() {
-    # Capture MeshCentral's own output to a file (and the add-on log) because its
-    # parent/child model otherwise hides the server's console messages.
-    meshcentral --datapath "${DATA_PATH}" >"${MESH_LOG}" 2>&1 &
+    # Tee MeshCentral's own output to both the add-on log (live) and a file, so
+    # its startup messages and errors are visible instead of being hidden by its
+    # parent/child model.
+    meshcentral --datapath "${DATA_PATH}" > >(tee "${MESH_LOG}") 2>&1 &
     MESH_PID=$!
     bashio::log.info "MeshCentral started (pid ${MESH_PID})."
 }
 
-# Report whether MeshCentral is listening on the container HTTPS port and dump
-# its config, data directory and logs so connectivity problems are visible.
+# Poll the container HTTPS port until MeshCentral is listening (first-run
+# certificate generation can take a while). If it never comes up, dump the
+# config, data directory and error log so the failure is visible.
 diagnose_listen() {
-    sleep 15
-    node -e '
-        const net = require("net");
-        const s = net.connect(443, "127.0.0.1");
-        s.setTimeout(4000);
-        s.on("connect", () => { console.log("DIAG: MeshCentral IS listening on container port 443."); s.end(); process.exit(0); });
-        s.on("timeout", () => { console.log("DIAG: no response from 127.0.0.1:443 (MeshCentral not listening)."); process.exit(0); });
-        s.on("error", (e) => { console.log("DIAG: cannot reach 127.0.0.1:443 - " + e.message); process.exit(0); });
-    ' 2>&1 || true
+    local waited=0
+    local interval=5
+    local max=120
+    while [ "${waited}" -lt "${max}" ]; do
+        if node -e '
+            const net = require("net");
+            const s = net.connect(443, "127.0.0.1");
+            s.setTimeout(3000);
+            s.on("connect", () => { s.end(); process.exit(0); });
+            s.on("timeout", () => process.exit(1));
+            s.on("error", () => process.exit(1));
+        ' 2>/dev/null; then
+            bashio::log.info "DIAG: MeshCentral is listening on container port 443 (after ${waited}s)."
+            return 0
+        fi
+        sleep "${interval}"
+        waited=$((waited + interval))
+    done
+    bashio::log.warning "DIAG: MeshCentral is NOT listening on container port 443 after ${max}s."
     bashio::log.info "DIAG: generated config.json:"
     cat "${DATA_PATH}/config.json" 2>&1 || true
     bashio::log.info "DIAG: data directory:"
@@ -105,7 +117,7 @@ diagnose_listen() {
     cat "${MESH_LOG}" 2>&1 || true
     if [ -f "${DATA_PATH}/mesherrors.txt" ]; then
         bashio::log.info "DIAG: mesherrors.txt:"
-        tail -n 40 "${DATA_PATH}/mesherrors.txt" 2>&1 || true
+        tail -n 60 "${DATA_PATH}/mesherrors.txt" 2>&1 || true
     fi
 }
 
