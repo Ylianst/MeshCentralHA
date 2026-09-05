@@ -12,7 +12,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const OPTIONS_PATH = '/data/options.json';
-const DATA_PATH = '/data/meshcentral';
+const DATA_PATH = process.env.MESH_DATA_PATH || '/data/meshcentral';
+const BACKUP_PATH = process.env.MESH_BACKUP_PATH || `${DATA_PATH}/backups`;
 const CONFIG_PATH = `${DATA_PATH}/config.json`;
 const SESSION_KEY_PATH = `${DATA_PATH}/.session_key`;
 const CERT_PATH = '/ssl/fullchain.pem';
@@ -75,6 +76,16 @@ function buildConfig(options) {
         port: 443,
         redirPort: 80,
         sessionKey: resolveSessionKey(options),
+        // WebRTC lets browser and agent talk peer-to-peer, cutting server relay
+        // load. It falls back to the relay automatically when unavailable.
+        webrtc: true,
+        // Automatic daily backups kept for 10 days, stored in the persistent
+        // addon_config folder so they survive updates and reinstalls.
+        autoBackup: {
+            backupIntervalHours: 24,
+            keepLastDaysBackup: 10,
+            backupPath: BACKUP_PATH,
+        },
     };
 
     // The container's 443/80 are mapped to different host ports (default

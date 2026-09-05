@@ -26,11 +26,11 @@ If you need options that are not exposed above, place a complete MeshCentral
 config file at:
 
 ```
-/addon_configs/<slug>_meshcentral/config.user.json
+/addon_configs/<slug>_meshcentral/meshcentral-data/config.user.json
 ```
 
-or inside the add-on data folder as `meshcentral/config.user.json`. When present,
-this file is used verbatim and the options above are ignored. See the
+When present, this file is used verbatim and the options above are ignored. See
+the
 [MeshCentral config schema](https://github.com/Ylianst/MeshCentral/blob/master/meshcentral-config-schema.json).
 
 ## Ports
@@ -80,8 +80,20 @@ Notes:
 ## Data & backups
 
 All persistent data (database, certificates, generated `config.json`) lives in
-the add-on's `/data/meshcentral` folder and survives restarts and updates.
-Back it up as part of your normal Home Assistant snapshots.
+the add-on's **config** folder, which survives restarts, updates **and even
+uninstall/reinstall**. On the host it is at `/addon_configs/<slug>_meshcentral`
+(also reachable through the *Samba*/`addon_configs` share) and is included in
+Home Assistant's standard backups.
+
+| Folder                 | Contents                                        |
+| ---------------------- | ----------------------------------------------- |
+| `meshcentral-data/`    | Database, certificates and generated `config.json`. |
+| `meshcentral-backups/` | Automatic server backups.                       |
+
+The add-on takes an **automatic backup every 24 hours** and keeps the last
+**10 days** — no configuration needed. Existing installs are migrated
+automatically: on first start after updating, anything found in the old
+`/data/meshcentral` location is copied over.
 
 ## Support
 

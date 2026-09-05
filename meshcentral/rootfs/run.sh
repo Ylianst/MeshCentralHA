@@ -2,15 +2,37 @@
 # ==============================================================================
 # MeshCentral Home Assistant add-on startup script.
 #
-# 1. Installs Home Assistant's TLS certificate.
-# 2. Generates MeshCentral's config.json from the add-on options.
-# 3. Launches MeshCentral and watches the Home Assistant certificate,
+# 1. Moves data to the persistent addon_config folder (survives uninstall).
+# 2. Installs Home Assistant's TLS certificate.
+# 3. Generates MeshCentral's config.json from the add-on options.
+# 4. Launches MeshCentral and watches the Home Assistant certificate,
 #    restarting MeshCentral when it is renewed.
 # ==============================================================================
 set -e
 
-DATA_PATH="/data/meshcentral"
-mkdir -p "${DATA_PATH}"
+# Persistent storage. /config is the add-on's addon_config folder, which
+# survives add-on updates AND uninstall/reinstall (unlike /data). MeshCentral
+# data and automatic backups live in sibling folders there.
+PERSIST_ROOT="/config"
+DATA_PATH="${PERSIST_ROOT}/meshcentral-data"
+BACKUP_PATH="${PERSIST_ROOT}/meshcentral-backups"
+LEGACY_DATA_PATH="/data/meshcentral"
+
+mkdir -p "${DATA_PATH}" "${BACKUP_PATH}"
+
+# One-time migration from the old /data location. Copy the previous database,
+# certificates and config over the first time we see an empty persistent folder.
+if [ ! -f "${DATA_PATH}/meshcentral.db" ] \
+    && [ ! -f "${DATA_PATH}/config.user.json" ] \
+    && [ -d "${LEGACY_DATA_PATH}" ] \
+    && [ -n "$(ls -A "${LEGACY_DATA_PATH}" 2>/dev/null)" ]; then
+    bashio::log.info "Migrating existing data from ${LEGACY_DATA_PATH} to ${DATA_PATH}..."
+    cp -a "${LEGACY_DATA_PATH}/." "${DATA_PATH}/" 2>/dev/null || true
+fi
+
+# Expose the resolved paths to the config generator.
+export MESH_DATA_PATH="${DATA_PATH}"
+export MESH_BACKUP_PATH="${BACKUP_PATH}"
 
 # The Home Assistant certificate is always used, read from fixed /ssl filenames.
 CERT_SRC="/ssl/fullchain.pem"
@@ -53,18 +75,20 @@ fi
 # reload certificates, so disable automatic exit-on-error.
 set +e
 MESH_PID=""
+MESH_LOG="${DATA_PATH}/meshcentral.log"
 
 start_mesh() {
-    # 2>&1 surfaces MeshCentral's own stderr in the add-on log.
-    meshcentral --datapath "${DATA_PATH}" 2>&1 &
+    # Capture MeshCentral's own output to a file (and the add-on log) because its
+    # parent/child model otherwise hides the server's console messages.
+    meshcentral --datapath "${DATA_PATH}" >"${MESH_LOG}" 2>&1 &
     MESH_PID=$!
     bashio::log.info "MeshCentral started (pid ${MESH_PID})."
 }
 
-# Report whether MeshCentral is actually listening on the container HTTPS port,
-# and surface its error log, so connectivity problems are visible in the log.
+# Report whether MeshCentral is listening on the container HTTPS port and dump
+# its config, data directory and logs so connectivity problems are visible.
 diagnose_listen() {
-    sleep 12
+    sleep 15
     node -e '
         const net = require("net");
         const s = net.connect(443, "127.0.0.1");
@@ -73,9 +97,15 @@ diagnose_listen() {
         s.on("timeout", () => { console.log("DIAG: no response from 127.0.0.1:443 (MeshCentral not listening)."); process.exit(0); });
         s.on("error", (e) => { console.log("DIAG: cannot reach 127.0.0.1:443 - " + e.message); process.exit(0); });
     ' 2>&1 || true
+    bashio::log.info "DIAG: generated config.json:"
+    cat "${DATA_PATH}/config.json" 2>&1 || true
+    bashio::log.info "DIAG: data directory:"
+    ls -la "${DATA_PATH}" 2>&1 || true
+    bashio::log.info "DIAG: MeshCentral output:"
+    cat "${MESH_LOG}" 2>&1 || true
     if [ -f "${DATA_PATH}/mesherrors.txt" ]; then
-        bashio::log.info "Last MeshCentral errors:"
-        tail -n 20 "${DATA_PATH}/mesherrors.txt" || true
+        bashio::log.info "DIAG: mesherrors.txt:"
+        tail -n 40 "${DATA_PATH}/mesherrors.txt" 2>&1 || true
     fi
 }
 

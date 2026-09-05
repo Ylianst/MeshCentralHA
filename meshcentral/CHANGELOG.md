@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.1.21-9
+
+- Data now lives in the persistent **addon_config** folder
+  (`/addon_configs/<slug>_meshcentral`), so it survives uninstall/reinstall as
+  well as updates. Existing `/data/meshcentral` installs are migrated
+  automatically on first start.
+- Automatic server backups are always on (every 24 hours, last 10 days kept),
+  stored alongside the data in the persistent folder — no configuration needed.
+- WebRTC is enabled for peer-to-peer sessions, reducing server relay load.
+
+## 1.1.21-8
+
+- Expanded startup diagnostics: capture MeshCentral's own output to a log file
+  and dump the generated config, data directory listing, and error log so a
+  non-listening server can be diagnosed.
+
 ## 1.1.21-7
 
 - Surface MeshCentral's own output in the add-on log and add a startup diagnostic
