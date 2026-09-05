@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.21-12
+
+- **Fixes a crash loop with EC/ECDSA Home Assistant certificates**
+  (`Cannot read public key. OID is not RSA`). MeshCentral's certificate library
+  only supports RSA, so the Home Assistant certificate is now injected only when
+  it is RSA. For EC (elliptic-curve) certificates, MeshCentral uses its own
+  self-signed certificate instead of crashing. A previously injected non-RSA
+  certificate is cleaned up safely without touching MeshCentral's own cert.
+
 ## 1.1.21-11
 
 - **Fixes MeshCentral never starting** (no output, no database or certificates

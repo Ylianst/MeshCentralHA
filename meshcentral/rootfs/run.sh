@@ -34,21 +34,50 @@ fi
 export MESH_DATA_PATH="${DATA_PATH}"
 export MESH_BACKUP_PATH="${BACKUP_PATH}"
 
-# The Home Assistant certificate is always used, read from fixed /ssl filenames.
+# The Home Assistant certificate is used only when it is an RSA certificate.
 CERT_SRC="/ssl/fullchain.pem"
 KEY_SRC="/ssl/privkey.pem"
 
-# Copy Home Assistant's certificate into the filenames MeshCentral loads. The
-# MeshCentral 'cert' name is derived from the certificate itself (see
-# generate-config.js), so it always matches and MeshCentral serves this cert.
+# Report the public-key type of a PEM certificate ("rsa", "ec", ...). Uses
+# Node's OpenSSL-backed parser, which (unlike MeshCentral's node-forge) reads
+# every key type.
+cert_key_type() {
+    node -e '
+        const fs = require("fs");
+        try {
+            const c = new (require("crypto").X509Certificate)(fs.readFileSync(process.argv[1]));
+            process.stdout.write((c.publicKey.asymmetricKeyType || "").toLowerCase());
+        } catch (e) { process.stdout.write(""); }
+    ' "$1" 2>/dev/null
+}
+
+# MeshCentral parses the web-server certificate with node-forge, which only
+# supports RSA. So we inject Home Assistant's certificate only when it is RSA;
+# otherwise MeshCentral falls back to its own self-signed certificate. The
+# 'cert' name is derived from the certificate (see generate-config.js) so it
+# always matches when we do install it.
 install_ha_cert() {
-    if bashio::fs.file_exists "${CERT_SRC}" && bashio::fs.file_exists "${KEY_SRC}"; then
+    if ! ( bashio::fs.file_exists "${CERT_SRC}" && bashio::fs.file_exists "${KEY_SRC}" ); then
+        bashio::log.warning "${CERT_SRC} or ${KEY_SRC} was not found in /ssl."
+        bashio::log.warning "MeshCentral will use its own self-signed certificate."
+        return
+    fi
+
+    if [ "$(cert_key_type "${CERT_SRC}")" = "rsa" ]; then
         cp "${CERT_SRC}" "${DATA_PATH}/webserver-cert-public.crt"
         cp "${KEY_SRC}" "${DATA_PATH}/webserver-cert-private.key"
-        bashio::log.info "Installed Home Assistant certificate from ${CERT_SRC}."
-    else
-        bashio::log.warning "${CERT_SRC} or ${KEY_SRC} was not found in /ssl."
-        bashio::log.warning "MeshCentral will fall back to its own self-signed certificate."
+        bashio::log.info "Installed Home Assistant RSA certificate from ${CERT_SRC}."
+        return
+    fi
+
+    bashio::log.warning "Home Assistant certificate is not RSA (MeshCentral cannot use it); using MeshCentral's own self-signed certificate."
+    # Remove only a previously injected non-RSA cert. MeshCentral's own cert is
+    # RSA, so this never deletes it (which would change the cert hash and break
+    # enrolled agents).
+    if [ -f "${DATA_PATH}/webserver-cert-public.crt" ] \
+        && [ "$(cert_key_type "${DATA_PATH}/webserver-cert-public.crt")" != "rsa" ]; then
+        rm -f "${DATA_PATH}/webserver-cert-public.crt" "${DATA_PATH}/webserver-cert-private.key"
+        bashio::log.info "Removed a previously injected non-RSA certificate so MeshCentral can self-sign."
     fi
 }
 

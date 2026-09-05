@@ -52,11 +52,19 @@ wrong port and agents cannot connect.
 
 ## Home Assistant certificate
 
-The add-on **always** serves Home Assistant's own TLS certificate (for example a
-Let's Encrypt certificate managed by the HA *Let's Encrypt* or *NGINX Home
-Assistant SSL proxy* add-ons). There is nothing to configure.
+If Home Assistant's own TLS certificate is an **RSA** certificate, the add-on
+serves it automatically (for example an RSA Let's Encrypt certificate from the
+HA *Let's Encrypt* or *NGINX Home Assistant SSL proxy* add-ons). There is
+nothing to configure.
 
-How it works:
+> **EC/ECDSA certificates:** MeshCentral's certificate library only supports
+> RSA, so if your Home Assistant certificate uses an elliptic-curve (EC) key,
+> the add-on cannot use it. In that case MeshCentral serves its **own
+> self-signed certificate** instead — your browser will show a one-time
+> certificate warning (this is normal and safe on your local network; agents
+> trust the server by its certificate hash, not the CA).
+
+How it works when the HA certificate is RSA:
 
 - The add-on mounts Home Assistant's `/ssl` share (read-only).
 - On each start it copies `fullchain.pem` and `privkey.pem` from `/ssl` into
@@ -74,8 +82,8 @@ Notes:
 - This shares the *certificate*, not the port. MeshCentral still runs on its own
   port; agents connect there directly. It does not place MeshCentral under a
   Home Assistant sub-path.
-- If `/ssl/fullchain.pem` or `/ssl/privkey.pem` is missing, MeshCentral falls
-  back to its own self-signed certificate and logs a warning.
+- If `/ssl/fullchain.pem` or `/ssl/privkey.pem` is missing (or is not RSA),
+  MeshCentral falls back to its own self-signed certificate.
 
 ## Data & backups
 
