@@ -76,6 +76,10 @@ function buildConfig(options) {
         port: 443,
         redirPort: 80,
         sessionKey: resolveSessionKey(options),
+        // Keep the generated certificates across restarts instead of
+        // regenerating them on any name change. This keeps the server/agent
+        // identity stable so enrolled agents are not re-signed on every restart.
+        keepcerts: true,
         // WebRTC lets browser and agent talk peer-to-peer, cutting server relay
         // load. It falls back to the relay automatically when unavailable.
         webrtc: true,

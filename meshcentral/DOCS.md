@@ -103,6 +103,10 @@ The add-on takes an **automatic backup every 24 hours** and keeps the last
 automatically: on first start after updating, anything found in the old
 `/data/meshcentral` location is copied over.
 
+The server's certificates (root, agent and code-signing) are generated once and
+**kept across restarts**, so enrolled agents stay trusted and are not re-signed
+when the add-on restarts.
+
 ## Support
 
 Issues with the add-on packaging: open an issue on the

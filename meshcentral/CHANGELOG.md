@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.21-13
+
+- **Certificates are now kept stable across restarts** (`keepcerts`). MeshCentral
+  no longer regenerates its root/agent/code-signing certificates on restart, so
+  enrolled agents are no longer re-signed. Combined with the persistent data
+  folder, the full server identity survives restarts, updates and reinstalls.
+
 ## 1.1.21-12
 
 - **Fixes a crash loop with EC/ECDSA Home Assistant certificates**
