@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.21-11
+
+- **Fixes MeshCentral never starting** (no output, no database or certificates
+  generated). MeshCentral is now installed locally in `/opt/meshcentral` and
+  launched with `node /opt/meshcentral/node_modules/meshcentral` instead of the
+  global `meshcentral` bin, which fails silently on Alpine due to module-path
+  resolution issues.
+
 ## 1.1.21-10
 
 - MeshCentral's own console output is now streamed live into the add-on log, so

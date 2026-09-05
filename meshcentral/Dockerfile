@@ -9,6 +9,10 @@ ENV LANG=C.UTF-8
 # MeshCentral is a Node.js application. The Home Assistant base image is
 # Alpine-based, so we install Node.js, npm and the toolchain needed to
 # compile any optional native dependencies.
+#
+# MeshCentral is installed *locally* into /opt/meshcentral (not `npm -g`).
+# The global bin shim has module-path resolution problems on Alpine and exits
+# silently; running the local package directly with node is reliable.
 RUN \
     apk add --no-cache \
         nodejs \
@@ -18,7 +22,9 @@ RUN \
     && apk add --no-cache --virtual .build-deps \
         build-base \
         python3 \
-    && npm install -g --omit=dev "meshcentral@${MESHCENTRAL_VERSION}" \
+    && mkdir -p /opt/meshcentral \
+    && cd /opt/meshcentral \
+    && npm install --omit=dev "meshcentral@${MESHCENTRAL_VERSION}" \
     && apk del --no-cache .build-deps \
     && rm -rf /root/.npm /tmp/*
 
@@ -27,7 +33,7 @@ COPY rootfs /
 
 RUN chmod a+x /run.sh
 
-WORKDIR /data/meshcentral
+WORKDIR /opt/meshcentral
 
 LABEL \
     org.opencontainers.image.title="MeshCentral" \

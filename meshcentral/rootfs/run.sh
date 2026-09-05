@@ -78,10 +78,11 @@ MESH_PID=""
 MESH_LOG="${DATA_PATH}/meshcentral.log"
 
 start_mesh() {
-    # Tee MeshCentral's own output to both the add-on log (live) and a file, so
-    # its startup messages and errors are visible instead of being hidden by its
-    # parent/child model.
-    meshcentral --datapath "${DATA_PATH}" > >(tee "${MESH_LOG}") 2>&1 &
+    # Run the locally-installed MeshCentral package directly with node. The
+    # global `meshcentral` bin shim fails silently on Alpine (module path
+    # issues), so we invoke node_modules/meshcentral. Tee its output to both
+    # the add-on log (live) and a file so startup messages/errors are visible.
+    node /opt/meshcentral/node_modules/meshcentral --datapath "${DATA_PATH}" > >(tee "${MESH_LOG}") 2>&1 &
     MESH_PID=$!
     bashio::log.info "MeshCentral started (pid ${MESH_PID})."
 }
